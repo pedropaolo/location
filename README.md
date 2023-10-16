@@ -18,7 +18,7 @@ Cada uma das APIs é documentada de acordo com a versão do sistema operacional 
 
 Cada requisição às APIs REST disponíveis deve ser **autenticada** através de um **token**. A geração do Token é realizada dentro da appliance FGT que deseja se autenticar na API. Deve-se incialmente criar um perfil do tipo **admin**, onde serão configuradas as devidas permissões:
 
-![image](./images/admin-profile.PNG)
+![image](./TCC/images/admin-profile.PNG)
 
 Como pode ser observado na imagem, existem diferentes níveis de permissão que podem ser atribuidos para cada uma das funcionalidades que podem ser acessadas via API.
 
@@ -26,7 +26,7 @@ Uma vez realizada a criação do perfil administrativo e configuradas suas devid
 
 Isso é importante para garantir que uma terceira aplicação possa realizar a conexão segura com a API
 
-![image](./images/api-admin-profile.PNG)
+![image](./TCC/images/api-admin-profile.PNG)
 
 ## 1.3 API Request
 
@@ -101,11 +101,11 @@ Dentro da parte de **wifi** é possível recuperar dados referentes ao dispositi
 
 As imagens a seguir apresentam o formato da assinatura da URL que acessa o método e seus respectivos campos de retorno:
 
-![image](./images/get-un.PNG)
+![image](./TCC/images/get-un.PNG)
 
-![image](./images/un-params.PNG)
+![image](./TCC/images/un-params.PNG)
 
-![](./images/un-res.PNG)
+![](./TCC/images/un-res.PNG)
 
 Como pode ser observado, dentre as informações que podem ser recuperadas temos:
 
@@ -120,7 +120,7 @@ De maneira resumida, pode-se dizer que o método recupera informações de dispo
 
 Como verificado na seção 1.3, apesar dos dados já estarem sendo devidamento direcionados apenas para os dispositivos não associados e do tipo BLE, ainda existem diversas informações não perminentes sendo ingeridas pela aplicação através do método GET. Afim de facilitar a manipulação dos dados e melhorar a performance da aplicação ao **consumir** e **armazenar** dados, foi realizado o tratamento dos dados para um formato mais enxuto.
 
-![Arquivo bruto tratado para o formato desejado](./images/filtered.PNG)
+![Arquivo bruto tratado para o formato desejado](./TCC/images/filtered.PNG)
 
 A imagem acima apresenta o objeto já em um formato mais próximo do ideal. Cada objeto traz consigo o tipo, o endereço MAC do dispositivo, o produtor e as respectivas informações coletadas por cada um dos três APs que "enxergam" o dispositivo não-associado - wtp_id, rssi e last_seen.
 
@@ -139,7 +139,7 @@ error](https://ieeexplore.ieee.org/document/4603226)
 
 O FortiGate é um NGFW responsável pela segurança da rede interna. Todos os pacotes que entram e saem da LAN passam obrigatoriamente pela entidade. Deve-se observar que são os **APs** que realizam a captura de dados dos dispositivos BLE e wifi não associados, mas todas as informações são centralizadas e podem ser consultadas apenas no FGT.
 
-![image](./images/fluxo.PNG)
+![image](./TCC/images/fluxo.PNG)
 
 
 
@@ -179,7 +179,7 @@ Triangulation based positioning method is a well-studied method. The method **fo
 
 An intersection point arises when there are three or more access points within a certain range, and the intersection point gives the estimated location of the mobile terminal. In practice, it is almost impossible to obtain a single interaction point due to errors in measurements. The signal strength measurement can be affected by obstacles and imperfect propagation models used. For example in Fig. 1, there are three intersections points, the final position estimation of point x will be the **average coordinate** of intersection points x1, x2 and x3.
 
-![triangulation](./images/triangulation.PNG)
+![triangulation](./TCC/images/triangulation.PNG)
 
 <!-- Mitigação de erro de precisão
 
