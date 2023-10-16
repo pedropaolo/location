@@ -120,6 +120,10 @@ De maneira resumida, pode-se dizer que o método recupera informações de dispo
 
 Como verificado na seção 1.3, apesar dos dados já estarem sendo devidamento direcionados apenas para os dispositivos não associados e do tipo BLE, ainda existem diversas informações não perminentes sendo ingeridas pela aplicação através do método GET. Afim de facilitar a manipulação dos dados e melhorar a performance da aplicação ao **consumir** e **armazenar** dados, foi realizado o tratamento dos dados para um formato mais enxuto.
 
+![Arquivo bruto tratado para o formato desejado](./images/filtered.PNG)
+
+A imagem acima apresenta o objeto já em um formato mais próximo do ideal. Cada objeto traz consigo o tipo, o endereço MAC do dispositivo, o produtor e as respectivas informações coletadas por cada um dos três APs que "enxergam" o dispositivo não-associado - wtp_id, rssi e last_seen.
+
 ## 4. Localização dos dispositivos não associados
 
 A partir dos dados obtidos, objetiva-se determinar a localização dos dispositivos não associados que foram capturados pelos APs. Para isso, utiliza-se uma técnica chamada **trilateração**. 
