@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const app = express();
 const port = 3000;
+const Circle = require('least-squares');
 
 // URL de acesso ao FGT de produção: fgt.nct.com.br e chave da API para acesso
 
@@ -25,18 +26,71 @@ localizacao_aps = {
 }
 
 // Recuperação de todos os dados retornados pelo firewall
+// Aqui também é realizado um tratamento inicial
+
+// app.get('/dados', (req, res) => {
+//     axios.get(url)
+//         .then(response => {
+
+//             const responseData = response.data.results;
+
+//             // Para realizar a trilateração, é necessário que pelo menos 3 APs estajam enxergando o beacon BLE. Para isso, realizou-se a filtragem dos objetos que estavam sendo "enxegados" por pelo menos 3 APs.
+//             const objetosFiltrados = responseData.filter(objeto => objeto.triangulation_regions && objeto.triangulation_regions.length === 3 && objeto.type === 'BLE device');
+
+
+
+//             const trilaterationData = objetosFiltrados.map(objeto => {
+//                 const trilaterationInfo = objeto.triangulation_regions.map(region => {
+//                     const { wtp_id, rssi } = region;
+//                     const { x, y } = localizacao_aps[wtp_id] || { x: 0, y: 0 }; 
+//                     return { x, y, rssi };
+//                 });
+
+//                 return {
+//                     type: objeto.type,
+//                     mac: objeto.mac,
+//                     trilateration_object: trilaterationInfo,
+//                 };
+//             });
+
+
+
+//             res.json(objetosFiltrados);
+//         })
+//         .catch(error => {
+//             console.error('Erro na requisição:', error);
+//             res.status(500).json({ error: 'Erro na requisição' });
+//         });
+
+
+// });
 
 app.get('/dados', (req, res) => {
     axios.get(url)
         .then(response => {
 
+            // Filtragem dos dados brutos obtidos via API
             const responseData = response.data.results;
+            const objetosFiltrados = responseData.filter(objeto => objeto.triangulation_regions && objeto.triangulation_regions.length === 3 && objeto.type === 'BLE device');
 
-            // Para realizar a trilateração, é necessário que pelo menos 3 APs estajam enxergando o beacon BLE. Para isso, realizou-se a filtragem dos objetos que estavam sendo "enxegados" por pelo menos 3 APs.
-            const objetosFiltrados = responseData.filter(objeto => objeto.triangulation_regions && objeto.triangulation_regions.length === 3);
+            // Formatação para cálculo de trilateração
 
-            // Envie a resposta JSON
-            res.json(objetosFiltrados);
+            const trilaterationData = objetosFiltrados.map(objeto => {
+                const trilaterationInfo = objeto.triangulation_regions.map(region => {
+                    const { wtp_id, rssi } = region;
+                    const { x, y } = localizacao_aps[wtp_id] || { x: 0, y: 0 };
+                    return { x, y, rssi };
+                });
+
+            // Formação de objeto no formato desejado
+                return {
+                    type: objeto.type,
+                    mac: objeto.mac,
+                    trilateration_object: trilaterationInfo,
+                };
+            });
+
+            res.json(trilaterationData); 
         })
         .catch(error => {
             console.error('Erro na requisição:', error);
@@ -45,77 +99,98 @@ app.get('/dados', (req, res) => {
 });
 
 
+// ALGORITMO UTILIZADO
+
+/**
+ 
+Capturar dados relativos ao BLE
+Obter objeto no formato: 
+
+    "type": "BLE device",
+    "mac": "1c:1a:c0:61:dd:c7",
+    "manufacturer": "Apple",
+    "triangulation_regions": [
+    {
+    "wtp_id": "FP231FTF20011648",
+    "rssi": 4,
+    "last_seen": 1697549759
+    },
+    {
+    "wtp_id": "FP231FTF20011781",
+    "rssi": 17,
+    "last_seen": 1693916877
+    },
+    {
+    "wtp_id": "FP231FTF20011660",
+    "rssi": 24,
+    "last_seen": 1693916071
+    }
+
+depois disso, deve-se realizar a posição estimada do dispositivo.
+para cada triangulation region
+
+verificar wtp_id. Na lista de APs, existem as coordenadas (x,y) de cada um dos APs que estão capturando informações
+
+criar objeto do tipo:
+
+    type: BLE device
+    mac: endereço mac
+    trilateration_object:{
+        x;
+        y;
+        distance;
+    }
+
+Aplicar trilateração -> coordenadas x,y de um ponto
+
+Armazenar posição + endereço MAC
+
+
+ */
+
+
 app.listen(port, () => {
     console.log(`Servidor Express rodando na porta ${port}`);
 });
 
 
-// // Dados dos pontos de acesso com coordenadas conhecidas
-// const accessPoints = [
-//     { wtp_id: "FP231FTF20011660", x: 0, y: 0 },
-//     { wtp_id: "FP231FTF20011648", x: 1, y: 0 },
-//     { wtp_id: "FP231FTF20011651", x: 0, y: 1 },
-//     // Adicione mais pontos de acesso conhecidos conforme necessário
-// ];
+// FUNÇÔES AUXILIARES
 
-// // Função para estimar a posição com base nas medições de RSSI
-// function estimatePosition(deviceData) {
-//     const distances = [];
-//     for (const region of deviceData.triangulation_regions) {
-//         const ap = accessPoints.find(ap => ap.wtp_id === region.wtp_id);
-//         if (ap) {
-//             // Use o modelo RSSI para estimar a distância (substitua com sua própria fórmula)
-//             const distance = calculateDistanceFromRSSI(region.rssi);
-//             distances.push({ x: ap.x, y: ap.y, distance });
-//         }
-//     }
+// Estimativa de distância com RSSI - Regressão polinomial
 
-//     if (distances.length < 3) {
-//         return "Não é possível estimar a posição com menos de 3 medições.";
-//     }
+function estimate_distance_from_rssi(rssi) {
+    // Coeficientes da equação
+    const w0 = 0;
+    const w1 = -3.90103347e-01;
+    const w2 = 7.10195916e-03;
+    const w3 = -7.53416567e-05;
+    const w4 = 2.10842385e-07;
+    const intercept = 17.689259549594077;
 
-//     // Realize a trilateração para determinar a posição do dispositivo
-//     const position = trilaterate(distances);
-//     return position;
-// }
+    // Calcula a distância estimada com base no RSSI
+    const distancia = intercept + w0 + w1 * rssi + w2 * Math.pow(rssi, 2) + w3 * Math.pow(rssi, 3) + w4 * Math.pow(rssi, 4);
 
-// // Função para calcular a distância com base no modelo RSSI (substitua com sua própria fórmula)
-// function calculateDistanceFromRSSI(rssi) {
-//     // Substitua esta fórmula pelo seu próprio modelo RSSI-distância
-//     return Math.pow(10, (27.55 - rssi) / 20.0);
-// }
+    return distancia;
+}
 
-// // Função de trilateração (exemplo simples)
-// function trilaterate(distances) {
-//     // Implemente aqui a lógica de trilateração para determinar a posição
-//     // Consulte recursos de trilateração para obter detalhes sobre a implementação.
-//     // Existem várias bibliotecas disponíveis que podem ajudar nesse processo.
+// FUNÇÃO QUE REALIZA A TRILATERAÇÃO
 
-//     // Exemplo simples: média ponderada das coordenadas ponderadas pelas distâncias
-//     let weightedX = 0;
-//     let weightedY = 0;
-//     let totalWeight = 0;
+function trilateration(ap_positions_with_distances) {
+    const circles = ap_positions_with_distances.map(item => new Circle(item.x, item.y, item.distancia));
+    const { result, meta } = Circle.leastSquares(circles);
+    const estimated_position = { x: result.center.x, y: result.center.y };
+    return estimated_position;
+}
 
-//     for (const d of distances) {
-//         const weight = 1 / d.distance;
-//         totalWeight += weight;
-//         weightedX += d.x * weight;
-//         weightedY += d.y * weight;
-//     }
+/*
 
-//     return { x: weightedX / totalWeight, y: weightedY / totalWeight };
-// }
+Exemplo de uso:
+const ap_positions_with_distances = [
+    { x: x1, y: y1, distancia: d1 },
+    { x: x2, y: y2, distancia: d2 },
+    { x: x3, y: y3, distancia: d3 }
+];
 
-// // Exemplo de uso
-// const deviceData = {
-//     type: "unassociated device",
-//     mac: "00:05:16:65:13:13",
-//     manufacturer: "SMART Modular",
-//     triangulation_regions: [
-//         { wtp_id: "FP231FTF20011660", rssi: 26, last_seen: 1697478640 },
-//         { wtp_id: "FP231FTF20011648", rssi: 36, last_seen: 1697478641 },
-//         { wtp_id: "FP231FTF20011651", rssi: 17, last_seen: 1697478139 },
-//     ],
-// };
+*/
 
-// const estimatedPosition
+

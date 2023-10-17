@@ -122,9 +122,43 @@ Como verificado na seção 1.3, apesar dos dados já estarem sendo devidamento d
 
 ![Arquivo bruto tratado para o formato desejado](./TCC/images/filtered.PNG)
 
-A imagem acima apresenta o objeto já em um formato mais próximo do ideal. Cada objeto traz consigo o tipo, o endereço MAC do dispositivo, o produtor e as respectivas informações coletadas por cada um dos três APs que "enxergam" o dispositivo não-associado - wtp_id, rssi e last_seen.
+A imagem acima apresenta o objeto já em um formato mais próximo do ideal. Importante ressaltar que a ferramenta devolve dispositivos não associados detectados por **ATÉ** 3 APs. Como deseja-se implementar o método da trilateração, é na verdade necessário que o dispositivo esteja sendo detectado por no mínimo 3 pontos de acesso. Outra abordagem seria substituir valores inexistentes por um valor zero de RSSi, afim de indicar a não detecção por parte do mesmo. O cálculo da trilateração é implementado recebendo três valores base: 
+
+- Coordenada X do AP que "enxerga" o dispositivo detectado;
+- Coordenada Y do AP que "enxerga" o dispositivo detectado;
+- Distância d entre AP e dispositivo detectado
+
+Para isso, realizou-se mais uma formatação dos dados coletados, dessa vez para o seguinte formato:
+
+![Dados pós-filtragem](./TCC/images/trilat.PNG)
+
+### Cálculo da distância baseado no valor do RSSI
+
+Como pode ser observado nas imagens, o valor retornado pela entidade coletora é o RSSI. Para realizar a trilateração e consequentemente determinar uma posição estimada para o beacon BLE, foi necessário implementar no código funcionalidade que fosse capaz de realizar essa conversão.
+
+Essa função, chamada **estimate_distance_from_rssi**, é usada para estimar a distância entre um dispositivo emissor e receptor com base no valor de RSSI (Received Signal Strength Indicator) capturado. O RSSI é uma medida da força do sinal de rádio transmitido entre esses dispositivos, e a função utiliza uma equação polinomial para fazer essa estimativa.
+
+A equação utilizada na função é uma forma de modelo de **regressão polinomial**, que foi ajustada com base em dados experimentais para relacionar o RSSI com a distância entre os dispositivos. Aqui está como a função opera:
+
+1. Coeficientes da equação: A função define coeficientes (w0, w1, w2, w3, w4) que representam os pesos atribuídos a diferentes termos da equação polinomial.
+
+2. Intercepto: Também é definido um intercepto (intercept) que é adicionado ao resultado da equação para ajustar a estimativa à situação específica.
+
+3. Cálculo da distância estimada: A função utiliza a seguinte equação polinomial para calcular a distância estimada com base no valor de RSSI:
+
+        distância = intercept + w0 + w1 * rssi + w2 * (rssi^2) + w3 * (rssi^3) + w4 * (rssi^4)
+
+Onde:
+   - "rssi" é o valor de RSSI capturado.
+   - "w0," "w1," "w2," "w3," "w4," e "intercept" são os coeficientes definidos anteriormente.
+
+A função retorna o valor da "distância" estimada, que representa a distância entre os dispositivos com base no RSSI fornecido. Em resumo, a função utiliza uma equação polinomial ajustada previamente para mapear o RSSI em uma estimativa de distância, ajudando a determinar a proximidade entre os dispositivos em uma rede de comunicação sem fio.
 
 ## 4. Localização dos dispositivos não associados
+
+### 4.1 Modelagem de RSSI
+
+Dando contunuidade, deve-se relacionar o RSSI, um valor de intensidade de sinal com a **distância**.
 
 A partir dos dados obtidos, objetiva-se determinar a localização dos dispositivos não associados que foram capturados pelos APs. Para isso, utiliza-se uma técnica chamada **trilateração**. 
 
