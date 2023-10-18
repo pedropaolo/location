@@ -116,6 +116,10 @@ Como pode ser observado, dentre as informações que podem ser recuperadas temos
 
 De maneira resumida, pode-se dizer que o método recupera informações de dispositivos que passarm pelas proximidades dos pontos de acesso instalados na infraestrutura estudada. Objetiva-se através destes parâmetros realizar o **mapeamento em tempo real** do dispositivos do tipo **BLE**.
 
+## 2 Procedimento adotado
+
+![data-process](./TCC/images/data-process.PNG)
+
 ## 3. Tratamento de dados
 
 Como verificado na seção 1.3, apesar dos dados já estarem sendo devidamento direcionados apenas para os dispositivos não associados e do tipo BLE, ainda existem diversas informações não perminentes sendo ingeridas pela aplicação através do método GET. Afim de facilitar a manipulação dos dados e melhorar a performance da aplicação ao **consumir** e **armazenar** dados, foi realizado o tratamento dos dados para um formato mais enxuto.
@@ -132,7 +136,9 @@ Para isso, realizou-se mais uma formatação dos dados coletados, dessa vez para
 
 ![Dados pós-filtragem](./TCC/images/trilat.PNG)
 
-### Cálculo da distância baseado no valor do RSSI
+### 3.1 Regressão polinomial
+
+### 3.2 Cálculo da distância baseado no valor do RSSI
 
 Como pode ser observado nas imagens, o valor retornado pela entidade coletora é o RSSI. Para realizar a trilateração e consequentemente determinar uma posição estimada para o beacon BLE, foi necessário implementar no código funcionalidade que fosse capaz de realizar essa conversão.
 
@@ -155,12 +161,6 @@ Onde:
 A função retorna o valor da "distância" estimada, que representa a distância entre os dispositivos com base no RSSI fornecido. Em resumo, a função utiliza uma equação polinomial ajustada previamente para mapear o RSSI em uma estimativa de distância, ajudando a determinar a proximidade entre os dispositivos em uma rede de comunicação sem fio.
 
 ## 4. Localização dos dispositivos não associados
-
-### 4.1 Modelagem de RSSI
-
-Dando contunuidade, deve-se relacionar o RSSI, um valor de intensidade de sinal com a **distância**.
-
-A partir dos dados obtidos, objetiva-se determinar a localização dos dispositivos não associados que foram capturados pelos APs. Para isso, utiliza-se uma técnica chamada **trilateração**. 
 
 [Trilateração com beacons bluetooth](C:/Users/pedro.picinin/Downloads/sensors-18-02820.pdf)
 

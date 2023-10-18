@@ -2,13 +2,14 @@ const express = require('express');
 const axios = require('axios');
 const app = express();
 const port = 3000;
-const Circle = require('least-squares');
+const { Circle } = require('least-squares');
+
 
 // URL de acesso ao FGT de produção: fgt.nct.com.br e chave da API para acesso
 
 const url = 'https://fgt.nct.com.br/api/v2/monitor/wifi/unassociated-devices?with_triangulation=true&access_token=d4g1y41n66qgp1ymQsngbxckc7wyd3';
 
-// Coordenadas (x,y) dos APs que realizam a captura dos dados - unassociated devices
+// Coordenadas (x,y) dos APs que realizam a captura dos dados - FortiAPs NCT Informática
 
 localizacao_aps = {
     'FP231FTF20011687': { 'x': 2.8, 'y': 6.2 },
@@ -25,45 +26,6 @@ localizacao_aps = {
     'FP23JFTF21006176': { 'x': 26, 'y': 2.3 }
 }
 
-// Recuperação de todos os dados retornados pelo firewall
-// Aqui também é realizado um tratamento inicial
-
-// app.get('/dados', (req, res) => {
-//     axios.get(url)
-//         .then(response => {
-
-//             const responseData = response.data.results;
-
-//             // Para realizar a trilateração, é necessário que pelo menos 3 APs estajam enxergando o beacon BLE. Para isso, realizou-se a filtragem dos objetos que estavam sendo "enxegados" por pelo menos 3 APs.
-//             const objetosFiltrados = responseData.filter(objeto => objeto.triangulation_regions && objeto.triangulation_regions.length === 3 && objeto.type === 'BLE device');
-
-
-
-//             const trilaterationData = objetosFiltrados.map(objeto => {
-//                 const trilaterationInfo = objeto.triangulation_regions.map(region => {
-//                     const { wtp_id, rssi } = region;
-//                     const { x, y } = localizacao_aps[wtp_id] || { x: 0, y: 0 }; 
-//                     return { x, y, rssi };
-//                 });
-
-//                 return {
-//                     type: objeto.type,
-//                     mac: objeto.mac,
-//                     trilateration_object: trilaterationInfo,
-//                 };
-//             });
-
-
-
-//             res.json(objetosFiltrados);
-//         })
-//         .catch(error => {
-//             console.error('Erro na requisição:', error);
-//             res.status(500).json({ error: 'Erro na requisição' });
-//         });
-
-
-// });
 
 app.get('/dados', (req, res) => {
     axios.get(url)
@@ -74,15 +36,16 @@ app.get('/dados', (req, res) => {
             const objetosFiltrados = responseData.filter(objeto => objeto.triangulation_regions && objeto.triangulation_regions.length === 3 && objeto.type === 'BLE device');
 
             // Formatação para cálculo de trilateração
-
             const trilaterationData = objetosFiltrados.map(objeto => {
+
+                // Aplicação da regressão polinomial e criação de um novo campo dentro do objeto triangulation regions: distancia
                 const trilaterationInfo = objeto.triangulation_regions.map(region => {
                     const { wtp_id, rssi } = region;
                     const { x, y } = localizacao_aps[wtp_id] || { x: 0, y: 0 };
-                    return { x, y, rssi };
+                    const distancia = estimate_distance_from_rssi(rssi); 
+                    return { x, y, rssi, distancia };
                 });
 
-            // Formação de objeto no formato desejado
                 return {
                     type: objeto.type,
                     mac: objeto.mac,
@@ -90,63 +53,14 @@ app.get('/dados', (req, res) => {
                 };
             });
 
-            res.json(trilaterationData); 
+            // Determinação da coordenada estimada (x,y) através da trilateração
+            res.json(trilaterationData);
         })
         .catch(error => {
             console.error('Erro na requisição:', error);
             res.status(500).json({ error: 'Erro na requisição' });
         });
 });
-
-
-// ALGORITMO UTILIZADO
-
-/**
- 
-Capturar dados relativos ao BLE
-Obter objeto no formato: 
-
-    "type": "BLE device",
-    "mac": "1c:1a:c0:61:dd:c7",
-    "manufacturer": "Apple",
-    "triangulation_regions": [
-    {
-    "wtp_id": "FP231FTF20011648",
-    "rssi": 4,
-    "last_seen": 1697549759
-    },
-    {
-    "wtp_id": "FP231FTF20011781",
-    "rssi": 17,
-    "last_seen": 1693916877
-    },
-    {
-    "wtp_id": "FP231FTF20011660",
-    "rssi": 24,
-    "last_seen": 1693916071
-    }
-
-depois disso, deve-se realizar a posição estimada do dispositivo.
-para cada triangulation region
-
-verificar wtp_id. Na lista de APs, existem as coordenadas (x,y) de cada um dos APs que estão capturando informações
-
-criar objeto do tipo:
-
-    type: BLE device
-    mac: endereço mac
-    trilateration_object:{
-        x;
-        y;
-        distance;
-    }
-
-Aplicar trilateração -> coordenadas x,y de um ponto
-
-Armazenar posição + endereço MAC
-
-
- */
 
 
 app.listen(port, () => {
@@ -173,24 +87,6 @@ function estimate_distance_from_rssi(rssi) {
     return distancia;
 }
 
-// FUNÇÃO QUE REALIZA A TRILATERAÇÃO
 
-function trilateration(ap_positions_with_distances) {
-    const circles = ap_positions_with_distances.map(item => new Circle(item.x, item.y, item.distancia));
-    const { result, meta } = Circle.leastSquares(circles);
-    const estimated_position = { x: result.center.x, y: result.center.y };
-    return estimated_position;
-}
-
-/*
-
-Exemplo de uso:
-const ap_positions_with_distances = [
-    { x: x1, y: y1, distancia: d1 },
-    { x: x2, y: y2, distancia: d2 },
-    { x: x3, y: y3, distancia: d3 }
-];
-
-*/
 
 
