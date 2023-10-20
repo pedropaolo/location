@@ -2,8 +2,6 @@ const express = require('express');
 const axios = require('axios');
 const app = express();
 const port = 3000;
-const { Circle } = require('least-squares');
-
 
 // URL de acesso ao FGT de produção: fgt.nct.com.br e chave da API para acesso
 
@@ -55,6 +53,47 @@ app.get('/dados', (req, res) => {
 
             // Determinação da coordenada estimada (x,y) através da trilateração
             res.json(trilaterationData);
+
+
+            const trilaterationResult = trilaterationData.map(objeto => {
+                const { type, mac, trilateration_object } = objeto;
+
+                // Verifique se existem pelo menos 3 pontos de referência para a trilateração
+                if (trilateration_object.length >= 3) {
+                    // Extraia os pontos de referência
+                    const ap1 = trilateration_object[0];
+                    const ap2 = trilateration_object[1];
+                    const ap3 = trilateration_object[2];
+
+                    // Realize a trilateração
+                    const estimatedPosition = trilaterate(ap1, ap2, ap3);
+
+                    // Crie um novo objeto com as informações desejadas
+                    const resultObj = {
+                        type,
+                        mac,
+                        position: {
+                            x: estimatedPosition.x,
+                            y: estimatedPosition.y,
+                        },
+                    };
+
+                    return resultObj;
+                } else {
+                    // Não há pontos de referência suficientes para a trilateração
+                    // Você pode tomar ação apropriada, como retornar null ou definir um valor padrão
+                    return null;
+                }
+            });
+
+            // Remova os objetos nulos, que não possuem pontos de referência suficientes
+            const validTrilaterationResults = trilaterationResult.filter(result => result !== null);
+
+            // Agora, você tem uma matriz de objetos contendo as coordenadas estimadas (x, y) e os endereços MAC
+            // res.json(validTrilaterationResults);
+
+
+
         })
         .catch(error => {
             console.error('Erro na requisição:', error);
@@ -69,7 +108,6 @@ app.listen(port, () => {
 
 
 // FUNÇÔES AUXILIARES
-
 // Estimativa de distância com RSSI - Regressão polinomial
 
 function estimate_distance_from_rssi(rssi) {
@@ -87,6 +125,34 @@ function estimate_distance_from_rssi(rssi) {
     return distancia;
 }
 
+// Trilateração
+
+function trilaterate(ap1, ap2, ap3) {
+    const x1 = ap1.x;
+    const y1 = ap1.y;
+    const d1 = ap1.distancia;
+
+    const x2 = ap2.x;
+    const y2 = ap2.y;
+    const d2 = ap2.distancia;
+
+    const x3 = ap3.x;
+    const y3 = ap3.y;
+    const d3 = ap3.distancia;
+
+    const A = 2 * (x2 - x1);
+    const B = 2 * (y2 - y1);
+    const C = 2 * (x3 - x1);
+    const D = 2 * (y3 - y1);
+
+    const E = (d1 * d1 - d2 * d2 - x1 * x1 + x2 * x2 - y1 * y1 + y2 * y2);
+    const F = (d2 * d2 - d3 * d3 - x2 * x2 + x3 * x3 - y2 * y2 + y3 * y3);
+
+    const x = ((E * D - B * F) / (A * D - B * C));
+    const y = ((E * C - A * F) / (B * C - A * D));
+
+    return { x, y };
+}
 
 
 
