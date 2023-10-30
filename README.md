@@ -116,6 +116,39 @@ Como pode ser observado, dentre as informações que podem ser recuperadas temos
 
 De maneira resumida, pode-se dizer que o método recupera informações de dispositivos que passarm pelas proximidades dos pontos de acesso instalados na infraestrutura estudada. Objetiva-se através destes parâmetros realizar o **mapeamento em tempo real** do dispositivos do tipo **BLE**.
 
+### 1.5 Configuração Aps
+
+Para FortiAPs com rádios Bluetooth integrados, o FortiGate pode configurar a varredura FortiAP Bluetooth Low Energy (BLE) e integrar-se com vários perfis BLE Beacon. Para isso, é necessário configurar um perfil BLE, que pode ser atribuído à um perfil de fortiAP, configurado no Firewall.
+
+    config wireless-controller wtp-profile
+      edit <name>
+        set ble-profile <name>
+      next
+    end
+
+Deve-se também configurar o intervalo em que os dados são reportados para a unidade central (Fortigate):
+
+    config wireless-controller timers
+      set ble-scan-report-intv - (default = 30 sec)
+    end
+
+As configurações abaixo apresentam outros parâmetros configuráveis para o sacn de dispositivos BLE:
+
+
+    config wireless-controller ble-profile
+      edit "myBleProfile"
+        set ble-scanning enable
+        set scan-type passive
+        set scan-period 1000
+        set scan-interval 30
+        set scan-window 30
+      next
+    end
+
+
+Cada AP possui três radios operando. Duas faixas de frequência são utilizadas para transmissão comum de dados (2.5 GHz e 5.4 GHz), existe também uma terceira rádio que opera exclusivamente para fins de monitoramento. 
+
+
 ## 2 Procedimento adotado
 
 ![data-process](./TCC/images/data-process.PNG)
@@ -126,7 +159,13 @@ Como verificado na seção 1.3, apesar dos dados já estarem sendo devidamento d
 
 ![Arquivo bruto tratado para o formato desejado](./TCC/images/filtered.PNG)
 
-A imagem acima apresenta o objeto já em um formato mais próximo do ideal. Importante ressaltar que a ferramenta devolve dispositivos não associados detectados por **ATÉ** 3 APs. Como deseja-se implementar o método da trilateração, é na verdade necessário que o dispositivo esteja sendo detectado por no mínimo 3 pontos de acesso. Outra abordagem seria substituir valores inexistentes por um valor zero de RSSi, afim de indicar a não detecção por parte do mesmo. O cálculo da trilateração é implementado recebendo três valores base: 
+A imagem acima apresenta o objeto já em um formato mais próximo do ideal. Importante ressaltar que a ferramenta devolve dispositivos não associados detectados por **ATÉ** 3 APs. Como deseja-se implementar o método da trilateração, é na verdade necessário que o dispositivo esteja sendo detectado por no mínimo 3 pontos de acesso. 
+
+<!-- Problemas no desenvolvimento -->
+
+Durante os processos de teste, utilizou-se apenas uma TAG BLE, dentro do ambiente corporativo da empresa, que contém 12 pontos de acesso ativo capturando os dados do dispositivo. Nem sempre (no início dos testes, quase nunca) a TAG é "enxergada" por mais de três APs dependendo de sua localização. Afim de contornar essa situação, foi necessário encontrar uma alternativa para realizar um cálculo de posição estimada com os dados provenientes de **menos de três pontos de acesso**. Quando se tem dados faltantes, existem diversas estratégias que podem ser utilizadas, como substituir os valores inexistentes por um valor de RSSI muito baixo, afim de indicar que o dispositivo não está sendo detectado pelos outros APs. O RSSI indica o nível de potência recebido após qualquer perda possível a nível de antena e cabo. Quanto maior o valor RSSI, maior é a intensidade do sinal. Quando medido em números negativos, o número que está mais perto de zero geralmente significa um sinal melhor. Como exemplo, -50 é um bom sinal, -75 é bastante razoável e -100 é nenhum sinal.
+
+ O cálculo da trilateração é implementado recebendo três valores base: 
 
 - Coordenada X do AP que "enxerga" o dispositivo detectado;
 - Coordenada Y do AP que "enxerga" o dispositivo detectado;
@@ -230,6 +269,8 @@ There are two main approaches to mitigate positioning error, the first is to cho
 
 [nodejs lib](https://github.com/TBMSP/Trilateration)
 
+
+## Pergunta
 
 
 

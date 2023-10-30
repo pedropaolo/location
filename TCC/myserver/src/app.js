@@ -24,6 +24,10 @@ localizacao_aps = {
     'FP23JFTF21006176': { 'x': 26, 'y': 2.3 }
 }
 
+// TAG BLE Utilizada para os testes
+// MAC ADDRESS: d9:63:8a:97:27:69
+// MEU IPHONE: 4c:93:f5:ab:d0:28
+
 
 app.get('/dados', (req, res) => {
     axios.get(url)
@@ -31,7 +35,11 @@ app.get('/dados', (req, res) => {
 
             // Filtragem dos dados brutos obtidos via API
             const responseData = response.data.results;
-            const objetosFiltrados = responseData.filter(objeto => objeto.triangulation_regions && objeto.triangulation_regions.length === 3 && objeto.type === 'BLE device');
+            const objetosFiltrados = responseData.filter(objeto => objeto.triangulation_regions && objeto.type === 'BLE device');
+
+            // Condição removida (objeto.length === 3) - Atualmente os APs da empresa 
+
+            //res.json(responseData)
 
             // Formatação para cálculo de trilateração
             const trilaterationData = objetosFiltrados.map(objeto => {
@@ -52,7 +60,7 @@ app.get('/dados', (req, res) => {
             });
 
             // Determinação da coordenada estimada (x,y) através da trilateração
-            res.json(trilaterationData);
+            //res.json(trilaterationData);
 
 
             const trilaterationResult = trilaterationData.map(objeto => {
@@ -82,7 +90,8 @@ app.get('/dados', (req, res) => {
                 } else {
                     // Não há pontos de referência suficientes para a trilateração
                     // Você pode tomar ação apropriada, como retornar null ou definir um valor padrão
-                    return null;
+                    return objeto;
+                   
                 }
             });
 
@@ -90,8 +99,7 @@ app.get('/dados', (req, res) => {
             const validTrilaterationResults = trilaterationResult.filter(result => result !== null);
 
             // Agora, você tem uma matriz de objetos contendo as coordenadas estimadas (x, y) e os endereços MAC
-            // res.json(validTrilaterationResults);
-
+            res.json(validTrilaterationResults);
 
 
         })
