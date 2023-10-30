@@ -1,7 +1,22 @@
 const express = require('express');
 const axios = require('axios');
 const app = express();
+const cors = require('cors'); // Importe o pacote cors
 const port = 3000;
+
+// Configuração básica do CORS para permitir todas as origens (não recomendado para produção)
+app.use(cors());
+
+// const allowedOrigins = ['http://localhost:3000']; // Substitua pelo seu URL real
+// app.use(cors({
+//     origin: function (origin, callback) {
+//         if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+//             callback(null, true);
+//         } else {
+//             callback(new Error('Acesso não permitido por CORS'));
+//         }
+//     },
+// }));
 
 // URL de acesso ao FGT de produção: fgt.nct.com.br e chave da API para acesso
 
@@ -21,7 +36,7 @@ localizacao_aps = {
     'FP231FTF20011704': { 'x': 26, 'y': 2 },
     'FP231FTF20011781': { 'x': 31.8, 'y': 3 },
     'FP231FTF21007223': { 'x': 32, 'y': 10.6 },
-    'FP23JFTF21006176': { 'x': 26, 'y': 2.3 }
+    'FP23JFTF21006176': { 'x': 26, 'y': 2.3 },
 }
 
 // TAG BLE Utilizada para os testes
@@ -35,7 +50,9 @@ app.get('/dados', (req, res) => {
 
             // Filtragem dos dados brutos obtidos via API
             const responseData = response.data.results;
-            const objetosFiltrados = responseData.filter(objeto => objeto.triangulation_regions && objeto.type === 'BLE device');
+            const objetosFiltrados = responseData.filter(objeto => {
+                return objeto.triangulation_regions && objeto.type === 'BLE device' && objeto.mac !== undefined;
+            });
 
             // Condição removida (objeto.length === 3) - Atualmente os APs da empresa 
 
@@ -107,6 +124,11 @@ app.get('/dados', (req, res) => {
             console.error('Erro na requisição:', error);
             res.status(500).json({ error: 'Erro na requisição' });
         });
+    // Obtenha a URL de origem da requisição
+    const origin = req.get('Origin');
+
+    // Agora você pode usar a variável "origin" como a URL de origem da requisição
+    console.log('Origem da requisição:', origin);
 });
 
 
