@@ -31,7 +31,7 @@ const bounds = [
     [615, 1230]
 ];
 
-// Corrija o loop for...in para multiplicar 'y' corretamente
+
 for (const key in posicao_aps_metros) {
     if (posicao_aps_metros.hasOwnProperty(key) && posicao_aps_metros[key].hasOwnProperty('x')) {
         posicao_aps_metros[key].x *= 35.1428571;
@@ -55,19 +55,43 @@ const fortiAP = new L.Icon({
     iconAnchor: [21, 42],
 });
 
+const ball = new L.Icon({
+    iconUrl: '../images/ball.png',
+    iconSize: [12, 12],
+    iconAnchor: [21, 42],
+});
+
+function convertCoordinates(coordinates) {
+    const convertedCoordinates = { x: coordinates.x * 35.1428571, y: coordinates.y * 29.6100144 };
+    return convertedCoordinates;
+}
+
+
 //  Função que recupera dados da API para plotá-los
 async function fetchDataAndPlotMarkers() {
     try {
         const response = await fetch('http://localhost:3000/dados');
         const markerData = await response.json();
+        // console.log("ALOOOOOOOOOOOOOOOO", markerData);
 
         if (Array.isArray(markerData)) {
             markerData.forEach(item => {
-                if (item.type === "BLE device" && item.position) {
-                    const { x, y, mac } = item.position;
-                    const marker = L.marker([y, x]).addTo(map);
-                    marker.bindPopup(mac);
+                if (item.type === "BLE device") {
+                    if (item.position) {
+                        // O objeto já contém as coordenadas estimadas
+                        const { x, y } = item.position;
+                        const convertedCoordinates = convertCoordinates({ x, y });
+                        const marker = L.marker([convertedCoordinates.y, convertedCoordinates.x], { icon: ball }).addTo(map);
+                        if (item.mac) {
+                            marker.bindPopup(`Endereço MAC: ${item.mac}`);
+                        } else {
+                            marker.bindPopup(`Endereço MAC não encontrado`);
+                        }
+                    } else {
+                      
+                    }
                 } else if (item.type === "BLE device" && item.trilateration_object) {
+                    // O objeto contém informações de RSSI e distância estimada
                     // Faça o tratamento específico desejado aqui, se necessário
                     // Por exemplo, criar círculos centrados no AP com raio igual ao valor de RSSI
                     createCirclesForTrilateration(item.trilateration_object);
@@ -78,6 +102,17 @@ async function fetchDataAndPlotMarkers() {
         console.error('Erro ao buscar dados do backend:', error);
     }
 }
+
+
+// Chame a função para plotar os marcadores APENAS após os dados da API serem carregados
+axios.get('http://localhost:3000/dados')
+    .then(response => {
+        plotMarkersOnMap(posicao_aps_metros);
+        fetchDataAndPlotMarkers();
+    })
+    .catch(error => {
+        console.error('Erro na requisição:', error);
+    });
 
 // const marker = L.marker([0, 0]).addTo(map);
 // const marker2 = L.marker([0, 1230]).addTo(map);
@@ -95,6 +130,7 @@ function plotMarkersOnMap(data) {
 
 // Chame a função para plotar os marcadores
 plotMarkersOnMap(posicao_aps_metros);
+fetchDataAndPlotMarkers();
 
 // Função para centralizar o mapa na posição inicial
 function centerMapToInitialPosition() {
@@ -105,34 +141,30 @@ function centerMapToInitialPosition() {
 const btnCenterMap = document.getElementById("btnCenterMap");
 btnCenterMap.addEventListener("click", centerMapToInitialPosition);
 
-// Variável 'markersData' não está definida em seu código, certifique-se de definir e preenchê-la adequadamente
-const markersData = [];  // Defina esta variável com os dados relevantes
 
 function highlightMarkerByMAC(mac) {
-    let marker; // Declare a variável marker fora do loop
-
-    // Percorra o objeto 'markersData'
-    for (const markerData of markersData) {
-        if (markerData.mac === mac) {
-            const latlng = L.latLng(markerData.y, markerData.x);
-            // Crie o marcador e associe-o ao mapa
-            marker = L.marker(latlng).addTo(map);
-
-            const popupContent = `<b>Endereço MAC:</b> ${markerData.mac}<br><b>Last Seen:</b> ...`;
-
-            // Associe o conteúdo do popup ao marcador
-            marker.bindPopup(popupContent).openPopup();
-
-            // Centralize o mapa na localização do marcador com um nível de zoom
-            map.setView(latlng, 1);
-
-            break;
+    let found = false;
+    map.eachLayer((layer) => {
+        if (layer instanceof L.Marker) {
+            const popup = layer.getPopup();
+            if (popup && popup.getContent().includes(mac)) {
+                // O marcador contém o endereço MAC pesquisado no conteúdo do popup
+                layer.openPopup();
+                map.setView(layer.getLatLng(), 1);
+                found = true; 
+            }
         }
+    });
+
+    if (!found) {
+        // Mostrar uma mensagem de erro se o endereço MAC não for encontrado
+        alert(`Endereço MAC '${mac}' não encontrado.`);
     }
 }
 
 // Função para buscar o endereço MAC inserido na barra de pesquisa e chamar a função de destaque
 function searchMAC() {
+    console.log("PESQUISEI")
     const input = document.getElementById("search");
     const macToSearch = input.value;
     highlightMarkerByMAC(macToSearch);

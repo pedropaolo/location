@@ -163,9 +163,9 @@ A imagem acima apresenta o objeto já em um formato mais próximo do ideal. Impo
 
 <!-- Problemas no desenvolvimento -->
 
-Durante os processos de teste, utilizou-se apenas uma TAG BLE, dentro do ambiente corporativo da empresa, que contém 12 pontos de acesso ativo capturando os dados do dispositivo. Nem sempre (no início dos testes, quase nunca) a TAG é "enxergada" por mais de três APs dependendo de sua localização. Afim de contornar essa situação, foi necessário encontrar uma alternativa para realizar um cálculo de posição estimada com os dados provenientes de **menos de três pontos de acesso**. Quando se tem dados faltantes, existem diversas estratégias que podem ser utilizadas, como substituir os valores inexistentes por um valor de RSSI muito baixo, afim de indicar que o dispositivo não está sendo detectado pelos outros APs. O RSSI indica o nível de potência recebido após qualquer perda possível a nível de antena e cabo. Quanto maior o valor RSSI, maior é a intensidade do sinal. Quando medido em números negativos, o número que está mais perto de zero geralmente significa um sinal melhor. Como exemplo, -50 é um bom sinal, -75 é bastante razoável e -100 é nenhum sinal.
+Durante os processos de teste, utilizou-se apenas uma TAG BLE, dentro do ambiente corporativo da empresa, que contém 11 pontos de acesso ativo capturando os dados do dispositivo. Nem sempre (no início dos testes, quase nunca) a TAG é "enxergada" por mais de três APs dependendo de sua localização. Afim de contornar essa situação, foi necessário encontrar uma alternativa para realizar um cálculo de posição estimada com os dados provenientes de **menos de três pontos de acesso**. Quando se tem dados faltantes, existem diversas estratégias que podem ser utilizadas, como substituir os valores inexistentes por um valor de RSSI muito baixo, afim de indicar que o dispositivo não está sendo detectado pelos outros APs. O RSSI indica o nível de potência recebido após qualquer perda possível a nível de antena e cabo. Quanto maior o valor RSSI, maior é a intensidade do sinal. Quando medido em números negativos, o número que está mais perto de zero geralmente significa um sinal melhor. Como exemplo, -50 é um bom sinal, -75 é bastante razoável e -100 é nenhum sinal.
 
- O cálculo da trilateração é implementado recebendo três valores base: 
+O cálculo da trilateração é implementado recebendo três valores base: 
 
 - Coordenada X do AP que "enxerga" o dispositivo detectado;
 - Coordenada Y do AP que "enxerga" o dispositivo detectado;
@@ -175,9 +175,18 @@ Para isso, realizou-se mais uma formatação dos dados coletados, dessa vez para
 
 ![Dados pós-filtragem](./TCC/images/trilat.PNG)
 
-### 3.1 Regressão polinomial
+### 3.1 Aplicação da Inteligência artificial
 
-### 3.2 Cálculo da distância baseado no valor do RSSI
+- Motivação
+- Problema tratado como problema de classificação
+- Algoritmos ja utilizados, suas respectivas eficácias
+- Porque devo criar um dataset com os dados do MEU ambiente
+- Procedimento para criação de dataset
+- Formato do dataset, quantidade de dados, quantidade que foi separada para validação e quantidade que foi separada para treinamento
+- Medidas retornadas! acuracia, MSE
+- O que posso concluir das análises
+
+### 3.2 Cálculo da distância baseado no valor do RSSI - aplicação da IA no código para melhorar a precisão da localização
 
 Como pode ser observado nas imagens, o valor retornado pela entidade coletora é o RSSI. Para realizar a trilateração e consequentemente determinar uma posição estimada para o beacon BLE, foi necessário implementar no código funcionalidade que fosse capaz de realizar essa conversão.
 
@@ -208,7 +217,7 @@ error](https://ieeexplore.ieee.org/document/4603226)
 
 <!-- Exemplo JSON tratado -->
 
-## Infraestrutura e fluxo de dados
+## Infraestrutura e fluxo de dados - explicação mais detalhada possível da infraestrutura que roda a aplicação, configurações que foram necessárias para implementação
 
 O FortiGate é um NGFW responsável pela segurança da rede interna. Todos os pacotes que entram e saem da LAN passam obrigatoriamente pela entidade. Deve-se observar que são os **APs** que realizam a captura de dados dos dispositivos BLE e wifi não associados, mas todas as informações são centralizadas e podem ser consultadas apenas no FGT.
 

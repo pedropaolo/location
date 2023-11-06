@@ -50,9 +50,7 @@ app.get('/dados', (req, res) => {
 
             // Filtragem dos dados brutos obtidos via API
             const responseData = response.data.results;
-            const objetosFiltrados = responseData.filter(objeto => {
-                return objeto.triangulation_regions && objeto.type === 'BLE device' && objeto.mac !== undefined;
-            });
+            const objetosFiltrados = responseData.filter(objeto => objeto.triangulation_regions && objeto.type === 'BLE device');
 
             // Condição removida (objeto.length === 3) - Atualmente os APs da empresa 
 
@@ -126,9 +124,6 @@ app.get('/dados', (req, res) => {
         });
     // Obtenha a URL de origem da requisição
     const origin = req.get('Origin');
-
-    // Agora você pode usar a variável "origin" como a URL de origem da requisição
-    console.log('Origem da requisição:', origin);
 });
 
 
