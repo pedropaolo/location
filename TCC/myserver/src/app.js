@@ -42,6 +42,7 @@ localizacao_aps = {
 // TAG BLE Utilizada para os testes
 // MAC ADDRESS: d9:63:8a:97:27:69
 // MEU IPHONE: 4c:93:f5:ab:d0:28
+// LIGHTBLUE: 60:67:60:64:82:54
 
 
 app.get('/dados', (req, res) => {
@@ -54,7 +55,7 @@ app.get('/dados', (req, res) => {
 
             // Condição removida (objeto.length === 3) - Atualmente os APs da empresa 
 
-            //res.json(responseData)
+            res.json(responseData)
 
             // Formatação para cálculo de trilateração
             const trilaterationData = objetosFiltrados.map(objeto => {
@@ -114,7 +115,7 @@ app.get('/dados', (req, res) => {
             const validTrilaterationResults = trilaterationResult.filter(result => result !== null);
 
             // Agora, você tem uma matriz de objetos contendo as coordenadas estimadas (x, y) e os endereços MAC
-            res.json(validTrilaterationResults);
+            //res.json(validTrilaterationResults);
 
 
         })

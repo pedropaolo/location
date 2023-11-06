@@ -11,10 +11,10 @@ const map = L.map("map", {
 });
 
 // Objeto com as coordenadas que vêm do backend. JSON com coordenadas x, y e endereço MAC
+
 const posicao_aps_metros = {
     'FP231FTF20011687': { 'x': 2.8, 'y': 6.2 },
     'FP231FTF20011686': { 'x': 7.5, 'y': 2.8 },
-    // 'FP221ETF18067422': { 'x': 2, 'y': 8 },
     'FP231FTF20011651': { 'x': 6.2, 'y': 15.5 },
     'FP231FTF21008385': { 'x': 13, 'y': 15.5 },
     'FP231FTF20011648': { 'x': 18, 'y': 15 },
@@ -23,7 +23,8 @@ const posicao_aps_metros = {
     'FP231FTF20011704': { 'x': 26, 'y': 2 },
     'FP231FTF20011781': { 'x': 31.8, 'y': 3 },
     'FP231FTF21007223': { 'x': 32, 'y': 14 },
-    // 'FP23JFTF21006176': { 'x': 26, 'y': 2.3 }
+    // 'FP23JFTF21006176': { 'x': 26, 'y': 2.3 },
+    // 'FP221ETF18067422': { 'x': 2, 'y': 8 },
 };
 
 const bounds = [
