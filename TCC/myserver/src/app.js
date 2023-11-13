@@ -39,10 +39,7 @@ localizacao_aps = {
     'FP23JFTF21006176': { 'x': 26, 'y': 2.3 },
 }
 
-// TAG BLE Utilizada para os testes
-// MAC ADDRESS: d9:63:8a:97:27:69
-// MEU IPHONE: 4c:93:f5:ab:d0:28
-// LIGHTBLUE: 60:67:60:64:82:54
+
 
 
 app.get('/dados', (req, res) => {
@@ -53,12 +50,19 @@ app.get('/dados', (req, res) => {
             const responseData = response.data.results;
             const objetosFiltrados = responseData.filter(objeto => objeto.triangulation_regions && objeto.type === 'BLE device');
 
+            const now = Date.now() / 1000; // Convertendo o tempo atual para segundos
+            const objetosVistosNosUltimos15Minutos = objetosFiltrados.filter(objeto => {
+                return objeto.triangulation_regions.some(region => (now - region.last_seen) <= 1800); 
+            });
+
+            res.json(objetosVistosNosUltimos15Minutos);
+
             // Condição removida (objeto.length === 3) - Atualmente os APs da empresa 
 
-            res.json(responseData)
+            //res.json(objetosFiltrados)
 
             // Formatação para cálculo de trilateração
-            const trilaterationData = objetosFiltrados.map(objeto => {
+            const trilaterationData = objetosVistosNosUltimos15Minutos.map(objeto => {
 
                 // Aplicação da regressão polinomial e criação de um novo campo dentro do objeto triangulation regions: distancia
                 const trilaterationInfo = objeto.triangulation_regions.map(region => {
