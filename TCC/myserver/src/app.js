@@ -55,7 +55,7 @@ app.get('/dados', (req, res) => {
                 return objeto.triangulation_regions.some(region => (now - region.last_seen) <= 1800); 
             });
 
-            res.json(objetosVistosNosUltimos15Minutos);
+            //res.json(objetosVistosNosUltimos15Minutos);
 
             // Condição removida (objeto.length === 3) - Atualmente os APs da empresa 
 
@@ -119,7 +119,7 @@ app.get('/dados', (req, res) => {
             const validTrilaterationResults = trilaterationResult.filter(result => result !== null);
 
             // Agora, você tem uma matriz de objetos contendo as coordenadas estimadas (x, y) e os endereços MAC
-            //res.json(validTrilaterationResults);
+            res.json(validTrilaterationResults);
 
 
         })

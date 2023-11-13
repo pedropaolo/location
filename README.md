@@ -193,7 +193,7 @@ Abaixo são apresentadas as configurações do perfil BLE criado:
 - Como a inteligencia artificial pode ajudar no problema
 - Estado da arte: para este problema, quais algoritmos seriam interessantes? 
 
-## 5. Dataset
+## 5. Dataset - Fingerprint database
 
 - Documentação de como foi criado o banco com os dados que serão utilizados para treinamento da IA.
 - Apresentação da planta, pontos conhecidos
@@ -209,6 +209,10 @@ Como verificado na seção 1.3, apesar dos dados já estarem sendo devidamento d
 
 A imagem acima apresenta o objeto já em um formato mais próximo do ideal. Importante ressaltar que a ferramenta devolve dispositivos não associados detectados por **ATÉ** 3 APs. Como deseja-se implementar o método da trilateração, é na verdade necessário que o dispositivo esteja sendo detectado por no mínimo 3 pontos de acesso. 
 
+
+## 4.Frontend
+
+![frontend](./TCC/images/front.PNG)
 
 ### (MVP!!!)3.2 Cálculo da distância baseado no valor do RSSI - aplicação da IA no código para melhorar a precisão da localização
 

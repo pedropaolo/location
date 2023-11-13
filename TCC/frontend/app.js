@@ -73,7 +73,7 @@ async function fetchDataAndPlotMarkers() {
     try {
         const response = await fetch('http://localhost:3000/dados');
         const markerData = await response.json();
-        // console.log("ALOOOOOOOOOOOOOOOO", markerData);
+        console.log("ALOOOOOOOOOOOOOOOO", markerData);
 
         if (Array.isArray(markerData)) {
             markerData.forEach(item => {
