@@ -163,6 +163,98 @@ Para todas as amostras coletadas, o beacon foi identificado apenas pelo AP FP231
     ]
   },
 
+  <!-- DIA 2 -->
+
+type	"BLE device"
+mac	"6e:91:f2:18:6a:0f"
+  triangulation_regions	
+
+    wtp_id	"FP231FTF20011686"
+    rssi	28
+    last_seen	1699961940
+
+
+type	"BLE device"
+  mac	"6e:91:f2:18:6a:0f"
+  triangulation_regions	
+  	
+      wtp_id	"FP231FTF20011686"
+      rssi	28
+      last_seen	1699961940
+
+
+type	"BLE device"
+  mac	"6e:91:f2:18:6a:0f"
+  triangulation_regions	
+  
+    wtp_id	"FP231FTF20011686"
+    rssi	20
+    last_seen	1699962142
+
+
+type	"BLE device"
+  mac	"6e:91:f2:18:6a:0f"
+  triangulation_regions	
+
+    wtp_id	"FP231FTF20011686"
+    rssi	23
+    last_seen	1699962309
+
+type	"BLE device"
+  mac	"6e:91:f2:18:6a:0f"
+  triangulation_regions	
+    
+    wtp_id	"FP231FTF20011686"
+    rssi	20
+    last_seen	1699962496
+
+
+type	"BLE device"
+  mac	"6e:91:f2:18:6a:0f"
+  triangulation_regions	
+	
+    wtp_id	"FP231FTF20011686"
+    rssi	19
+    last_seen	1699962789
+
+type	"BLE device"
+  mac	"66:99:54:4d:3e:3e"
+  triangulation_regions	
+
+    wtp_id	"FP231FTF20011686"
+    rssi	22
+    last_seen	1699962833
+
+
+type	"BLE device"
+  mac	"66:99:54:4d:3e:3e"
+  triangulation_regions	
+	
+  wtp_id	"FP231FTF20011686"
+  rssi	16
+  last_seen	1699963080
+
+
+
+type	"BLE device"
+  mac	"5a:4c:62:d1:a5:ae"
+  trilateration_object	
+	
+    x	7.5
+    y	2
+    rssi	22
+    distancia	11.791487282233037
+
+
+type	"BLE device"
+  mac	"5a:4c:62:d1:a5:ae"
+  trilateration_object	
+	
+    x	7.5
+    y	2
+    rssi	22
+    distancia	11.791487282233037
+
 ## COORDENADA 02 - bancada copa ()
 
 {
@@ -290,6 +382,8 @@ Para todas as amostras coletadas, o beacon foi identificado apenas pelo AP FP231
       }
     ]
   },
+
+  <!-- DIA 2 -->
 
 
 
@@ -462,6 +556,9 @@ Para todas as amostras coletadas, o beacon foi identificado apenas pelo AP FP231
     ]
   },
 
+
+  <!-- DIA 2 -->
+
 ## COORDENADA 04 - Mesa Gerencia ()
 
 ## COORDENADA 05 - Recepção ()
@@ -621,6 +718,8 @@ Para todas as amostras coletadas, o beacon foi identificado apenas pelo AP FP231
     ]
   },
 
+  <!-- DIA 2 -->
+
 ## COORDENADA 06 - Sala Armando ()
 
 {
@@ -692,6 +791,8 @@ Para todas as amostras coletadas, o beacon foi identificado apenas pelo AP FP231
       }
     ]
   },
+
+  <!-- DIA 2 -->
 
 ## COORDENADA 07 - Treinamento ()
 
@@ -846,4 +947,6 @@ Para todas as amostras coletadas, o beacon foi identificado apenas pelo AP FP231
     ]
   },
 
+
+<!-- DIA 2 -->
 

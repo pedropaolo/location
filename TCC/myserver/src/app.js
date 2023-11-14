@@ -50,10 +50,10 @@ app.get('/dados', (req, res) => {
             const responseData = response.data.results;
             const objetosFiltrados = responseData.filter(objeto => objeto.triangulation_regions && objeto.type === 'BLE device');
 
-            const now = Date.now() / 1000; // Convertendo o tempo atual para segundos
-            const objetosVistosNosUltimos15Minutos = objetosFiltrados.filter(objeto => {
-                return objeto.triangulation_regions.some(region => (now - region.last_seen) <= 1800); 
-            });
+            // const now = Date.now() / 1000; // Convertendo o tempo atual para segundos
+            // const objetosVistosNosUltimos15Minutos = objetosFiltrados.filter(objeto => {
+            //     return objeto.triangulation_regions.some(region => (now - region.last_seen) <= 1800); 
+            // });
 
             //res.json(objetosVistosNosUltimos15Minutos);
 
@@ -62,7 +62,7 @@ app.get('/dados', (req, res) => {
             //res.json(objetosFiltrados)
 
             // Formatação para cálculo de trilateração
-            const trilaterationData = objetosVistosNosUltimos15Minutos.map(objeto => {
+            const trilaterationData = objetosFiltrados.map(objeto => {
 
                 // Aplicação da regressão polinomial e criação de um novo campo dentro do objeto triangulation regions: distancia
                 const trilaterationInfo = objeto.triangulation_regions.map(region => {
@@ -80,7 +80,7 @@ app.get('/dados', (req, res) => {
             });
 
             // Determinação da coordenada estimada (x,y) através da trilateração
-            //res.json(trilaterationData);
+            // res.json(trilaterationData);
 
 
             const trilaterationResult = trilaterationData.map(objeto => {
@@ -119,7 +119,7 @@ app.get('/dados', (req, res) => {
             const validTrilaterationResults = trilaterationResult.filter(result => result !== null);
 
             // Agora, você tem uma matriz de objetos contendo as coordenadas estimadas (x, y) e os endereços MAC
-            res.json(validTrilaterationResults);
+             res.json(validTrilaterationResults);
 
 
         })

@@ -88,15 +88,18 @@ async function fetchDataAndPlotMarkers() {
                         } else {
                             marker.bindPopup(`Endereço MAC não encontrado`);
                         }
-                    } else {
-                      
+                    } else if (item.trilateration_object){
+                        const { x, y, rssi } = item.trilateration_object[0];
+                        const convertedCoordinates = convertCoordinates({ x, y });
+                        const circle = L.circle([convertedCoordinates.y, convertedCoordinates.x], {
+                            radius: calculateRadiusFromRSSI(rssi),
+                            color: 'red',
+                            fillColor: '#f03',
+                            fillOpacity: 0.3
+                        }).addTo(map);
+                        circle.bindPopup(`Endereço MAC: ${item.mac}`);
                     }
-                } else if (item.type === "BLE device" && item.trilateration_object) {
-                    // O objeto contém informações de RSSI e distância estimada
-                    // Faça o tratamento específico desejado aqui, se necessário
-                    // Por exemplo, criar círculos centrados no AP com raio igual ao valor de RSSI
-                    createCirclesForTrilateration(item.trilateration_object);
-                }
+                } 
             });
         }
     } catch (error) {
@@ -105,7 +108,35 @@ async function fetchDataAndPlotMarkers() {
 }
 
 
-// Chame a função para plotar os marcadores APENAS após os dados da API serem carregados
+function createCirclesForTrilateration(trilaterationData) {
+    console.log("PASSEI AQUI?")
+    trilaterationData.forEach(data => {
+        const { x, y, rssi } = data;
+        const convertedCoordinates = convertCoordinates({ x, y });
+        const circle = L.circle([convertedCoordinates.y, convertedCoordinates.x], {
+            radius: calculateRadiusFromRSSI(rssi),
+            color: 'red',
+            fillColor: '#f03',
+            fillOpacity: 0.3
+        }).addTo(map);
+        circle.bindPopup(`Endereço MAC: ${item.mac}`);
+    });
+}
+
+function calculateRadiusFromRSSI(rssi) {
+    // Lógica para calcular o raio com base no RSSI
+    const minRadius = 10;
+    const maxRadius = 100;
+    const scaleFactor = 5; 
+
+    // Mapeia o valor de RSSI para o intervalo [minRadius, maxRadius]
+    const radius = Math.min(maxRadius, Math.max(minRadius, scaleFactor * rssi));
+
+    return radius;
+}
+
+
+
 axios.get('http://localhost:3000/dados')
     .then(response => {
         plotMarkersOnMap(posicao_aps_metros);
@@ -115,8 +146,6 @@ axios.get('http://localhost:3000/dados')
         console.error('Erro na requisição:', error);
     });
 
-// const marker = L.marker([0, 0]).addTo(map);
-// const marker2 = L.marker([0, 1230]).addTo(map);
 
 function plotMarkersOnMap(data) {
     for (const key in data) {
@@ -129,7 +158,7 @@ function plotMarkersOnMap(data) {
     }
 }
 
-// Chame a função para plotar os marcadores
+
 plotMarkersOnMap(posicao_aps_metros);
 fetchDataAndPlotMarkers();
 
@@ -138,7 +167,7 @@ function centerMapToInitialPosition() {
     map.setView([219, 615], -1);
 }
 
-// Adicione o botão para centralizar o mapa
+// Adição do botão para centralizar o mapa
 const btnCenterMap = document.getElementById("btnCenterMap");
 btnCenterMap.addEventListener("click", centerMapToInitialPosition);
 
@@ -153,6 +182,16 @@ function highlightMarkerByMAC(mac) {
                 layer.openPopup();
                 map.setView(layer.getLatLng(), 1);
                 found = true; 
+            }
+        }
+
+        else if (layer instanceof L.Circle) {
+            // Verifica se é um círculo
+            const popup = layer.getPopup();
+            if (popup && popup.getContent().includes(mac)) {
+                layer.openPopup();
+                map.setView(layer.getLatLng(), 1);
+                found = true;
             }
         }
     });
