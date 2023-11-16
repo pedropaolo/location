@@ -3,6 +3,7 @@ const axios = require('axios');
 const app = express();
 const cors = require('cors'); // Importe o pacote cors
 const port = 3000;
+const trilateration = require('./trilateration.js');
 
 // Configuração básica do CORS para permitir todas as origens (não recomendado para produção)
 app.use(cors());
@@ -48,18 +49,17 @@ app.get('/dados', (req, res) => {
 
             // Filtragem dos dados brutos obtidos via API
             const responseData = response.data.results;
-            const objetosFiltrados = responseData.filter(objeto => objeto.triangulation_regions && objeto.type === 'BLE device');
+            //res.json(responseData)
+            const objetosFiltrados = responseData.filter(objeto => objeto.triangulation_regions && objeto.triangulation_regions.length === 3);
 
-            // const now = Date.now() / 1000; // Convertendo o tempo atual para segundos
-            // const objetosVistosNosUltimos15Minutos = objetosFiltrados.filter(objeto => {
-            //     return objeto.triangulation_regions.some(region => (now - region.last_seen) <= 1800); 
-            // });
+            const now = Date.now() / 1000; // Convertendo o tempo atual para segundos
+            const objetosVistosNosUltimos15Minutos = objetosFiltrados.filter(objeto => {
+                return objeto.triangulation_regions.some(region => (now - region.last_seen) <= 1800); 
+            });
 
             //res.json(objetosVistosNosUltimos15Minutos);
 
             // Condição removida (objeto.length === 3) - Atualmente os APs da empresa 
-
-            //res.json(objetosFiltrados)
 
             // Formatação para cálculo de trilateração
             const trilaterationData = objetosFiltrados.map(objeto => {
@@ -68,8 +68,8 @@ app.get('/dados', (req, res) => {
                 const trilaterationInfo = objeto.triangulation_regions.map(region => {
                     const { wtp_id, rssi } = region;
                     const { x, y } = localizacao_aps[wtp_id] || { x: 0, y: 0 };
-                    const distancia = estimate_distance_from_rssi(rssi); 
-                    return { x, y, rssi, distancia };
+                    const distancia = estimate_distance_from_rssi(rssi);
+                    return { x, y, z:0, r: distancia };
                 });
 
                 return {
@@ -80,7 +80,7 @@ app.get('/dados', (req, res) => {
             });
 
             // Determinação da coordenada estimada (x,y) através da trilateração
-            // res.json(trilaterationData);
+            //res.json(trilaterationData);
 
 
             const trilaterationResult = trilaterationData.map(objeto => {
@@ -94,32 +94,40 @@ app.get('/dados', (req, res) => {
                     const ap3 = trilateration_object[2];
 
                     // Realize a trilateração
-                    const estimatedPosition = trilaterate(ap1, ap2, ap3);
+                    const estimatedPosition = trilateration(ap1, ap2, ap3, true);
+                    console.log(estimatedPosition)
 
-                    // Crie um novo objeto com as informações desejadas
+                    if(estimatedPosition != null){
+                        const resultObj = {
+                            type,
+                            mac,
+                            position: {
+                                x: estimatedPosition.x,
+                                y: estimatedPosition.y,
+                            },
+                        };
+
+                        return resultObj;
+                    }
+
+                    
+                } else {
                     const resultObj = {
                         type,
                         mac,
                         position: {
-                            x: estimatedPosition.x,
-                            y: estimatedPosition.y,
+                            x: 0,
+                            y: 0,
                         },
                     };
 
                     return resultObj;
-                } else {
-                    // Não há pontos de referência suficientes para a trilateração
-                    // Você pode tomar ação apropriada, como retornar null ou definir um valor padrão
-                    return objeto;
-                   
                 }
             });
-
-            // Remova os objetos nulos, que não possuem pontos de referência suficientes
-            const validTrilaterationResults = trilaterationResult.filter(result => result !== null);
+           
 
             // Agora, você tem uma matriz de objetos contendo as coordenadas estimadas (x, y) e os endereços MAC
-             res.json(validTrilaterationResults);
+            res.json(trilaterationResult);
 
 
         })
@@ -157,32 +165,29 @@ function estimate_distance_from_rssi(rssi) {
 
 // Trilateração
 
-function trilaterate(ap1, ap2, ap3) {
-    const x1 = ap1.x;
-    const y1 = ap1.y;
-    const d1 = ap1.distancia;
+// function trilaterate(ap1, ap2, ap3) {
+//     const x1 = ap1.x;
+//     const y1 = ap1.y;
+//     const d1 = ap1.distancia;
 
-    const x2 = ap2.x;
-    const y2 = ap2.y;
-    const d2 = ap2.distancia;
+//     const x2 = ap2.x;
+//     const y2 = ap2.y;
+//     const d2 = ap2.distancia;
 
-    const x3 = ap3.x;
-    const y3 = ap3.y;
-    const d3 = ap3.distancia;
+//     const x3 = ap3.x;
+//     const y3 = ap3.y;
+//     const d3 = ap3.distancia;
 
-    const A = 2 * (x2 - x1);
-    const B = 2 * (y2 - y1);
-    const C = 2 * (x3 - x1);
-    const D = 2 * (y3 - y1);
+//     const A = 2 * (x2 - x1);
+//     const B = 2 * (y2 - y1);
+//     const C = 2 * (x3 - x1);
+//     const D = 2 * (y3 - y1);
 
-    const E = (d1 * d1 - d2 * d2 - x1 * x1 + x2 * x2 - y1 * y1 + y2 * y2);
-    const F = (d2 * d2 - d3 * d3 - x2 * x2 + x3 * x3 - y2 * y2 + y3 * y3);
+//     const E = (d1 * d1 - d2 * d2 - x1 * x1 + x2 * x2 - y1 * y1 + y2 * y2);
+//     const F = (d2 * d2 - d3 * d3 - x2 * x2 + x3 * x3 - y2 * y2 + y3 * y3);
 
-    const x = ((E * D - B * F) / (A * D - B * C));
-    const y = ((E * C - A * F) / (B * C - A * D));
+//     const x = ((E * D - B * F) / (A * D - B * C));
+//     const y = ((E * C - A * F) / (B * C - A * D));
 
-    return { x, y };
-}
-
-
-
+//     return { x, y };
+// }
