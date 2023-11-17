@@ -110,7 +110,7 @@ app.get('/associados', (req, res) => {
                 }
             });
 
-            // res.json(trilaterationResult); // Retorna o resultado final com as coordenadas estimadas
+           // res.json(trilaterationResult); // Retorna o resultado final com as coordenadas estimadas
         })
         .catch(error => {
             res.status(500).json({ error: 'Ocorreu um erro ao processar a requisição de dados.' });
