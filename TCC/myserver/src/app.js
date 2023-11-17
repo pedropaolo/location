@@ -23,6 +23,8 @@ app.use(cors());
 
 const url = 'https://fgt.nct.com.br/api/v2/monitor/wifi/unassociated-devices?with_triangulation=true&access_token=d4g1y41n66qgp1ymQsngbxckc7wyd3';
 
+const url2 = 'https://fgt.nct.com.br/api/v2/monitor/wifi/client/?with_triangulation=true&access_token=d4g1y41n66qgp1ymQsngbxckc7wyd3'
+
 // Coordenadas (x,y) dos APs que realizam a captura dos dados - FortiAPs NCT Informática
 
 localizacao_aps = {
@@ -41,6 +43,82 @@ localizacao_aps = {
 }
 
 
+// Dispositivos conectados
+
+app.get('/associados', (req, res) => {
+    axios.get(url2)
+        .then(response => {
+            const responseData = response.data.results;
+
+            // Filtrando os dados com base no tempo e removendo a condição objeto.length === 3
+            const objetosVistosNosUltimos15Minutos = responseData.filter(objeto => {
+                const now = Date.now() / 1000;
+                return objeto.triangulation_regions &&
+                    objeto.triangulation_regions.every(region => (now - region.last_seen) <= 1800);
+            });
+
+            res.json(objetosVistosNosUltimos15Minutos)
+
+            // Formatação para cálculo de trilateração
+            const trilaterationData = objetosVistosNosUltimos15Minutos.map(objeto => {
+                const trilaterationInfo = objeto.triangulation_regions.map(region => {
+                    const { wtp_id, rssi } = region;
+                    const { x, y } = localizacao_aps[wtp_id] || { x: 0, y: 0 };
+                    const distancia = estimate_distance_from_rssi(rssi);
+                    return { x, y, z: 0, r: distancia };
+                });
+
+                return {
+                    type: objeto.type,
+                    mac: objeto.user, // Alteração do campo 'mac' para corresponder a 'user'
+                    trilateration_object: trilaterationInfo,
+                };
+            });
+
+            // Determinação da coordenada estimada (x, y) através da trilateração
+            const trilaterationResult = trilaterationData.map(objeto => {
+                const { type, mac, trilateration_object } = objeto;
+
+                if (trilateration_object.length >= 3) {
+                    const ap1 = trilateration_object[0];
+                    const ap2 = trilateration_object[1];
+                    const ap3 = trilateration_object[2];
+
+                    const estimatedPosition = trilateration(ap1, ap2, ap3, true);
+
+                    if (estimatedPosition !== null) {
+                        const resultObj = {
+                            type,
+                            user: mac, // Alteração do campo 'mac' para corresponder a 'user'
+                            position: {
+                                x: estimatedPosition.x,
+                                y: estimatedPosition.y,
+                            },
+                        };
+                        return resultObj;
+                    }
+                } else {
+                    const resultObj = {
+                        type,
+                        user: mac, // Alteração do campo 'mac' para corresponder a 'user'
+                        position: {
+                            x: 0,
+                            y: 0,
+                        },
+                    };
+                    return resultObj;
+                }
+            });
+
+            // res.json(trilaterationResult); // Retorna o resultado final com as coordenadas estimadas
+        })
+        .catch(error => {
+            res.status(500).json({ error: 'Ocorreu um erro ao processar a requisição de dados.' });
+        });
+});
+
+
+// Dispositivos não associados
 
 
 app.get('/dados', (req, res) => {
@@ -57,7 +135,7 @@ app.get('/dados', (req, res) => {
                 return objeto.triangulation_regions.some(region => (now - region.last_seen) <= 1800); 
             });
 
-            //res.json(objetosVistosNosUltimos15Minutos);
+            // res.json(objetosVistosNosUltimos15Minutos);
 
             // Condição removida (objeto.length === 3) - Atualmente os APs da empresa 
 
