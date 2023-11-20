@@ -128,7 +128,7 @@ app.get('/dados', (req, res) => {
             // Filtragem dos dados brutos obtidos via API
             const responseData = response.data.results;
             //res.json(responseData)
-            const objetosFiltrados = responseData.filter(objeto => objeto.triangulation_regions && objeto.triangulation_regions.length === 3);
+            const objetosFiltrados = responseData.filter(objeto => objeto.triangulation_regions && objeto.triangulation_regions.length === 3 && objeto.type === 'BLE device');
 
             const now = Date.now() / 1000; // Convertendo o tempo atual para segundos
             const objetosVistosNosUltimos15Minutos = objetosFiltrados.filter(objeto => {
@@ -158,7 +158,7 @@ app.get('/dados', (req, res) => {
             });
 
             // Determinação da coordenada estimada (x,y) através da trilateração
-            //res.json(trilaterationData);
+            res.json(trilaterationData);
 
 
             const trilaterationResult = trilaterationData.map(objeto => {
@@ -173,7 +173,7 @@ app.get('/dados', (req, res) => {
 
                     // Realize a trilateração
                     const estimatedPosition = trilateration(ap1, ap2, ap3, true);
-                    console.log(estimatedPosition)
+                    //console.log(estimatedPosition)
 
                     if(estimatedPosition != null){
                         const resultObj = {
