@@ -5,19 +5,17 @@ const cors = require('cors'); // Importe o pacote cors
 const port = 3000;
 const trilateration = require('./trilateration.js');
 
+
+// ferramentas de inteligencia artificial
+
+const tf = require('@tensorflow/tfjs')
+const sk = require('scikitjs')
+sk.setBackend(tf)
+
+
 // Configuração básica do CORS para permitir todas as origens (não recomendado para produção)
 app.use(cors());
 
-// const allowedOrigins = ['http://localhost:3000']; // Substitua pelo seu URL real
-// app.use(cors({
-//     origin: function (origin, callback) {
-//         if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
-//             callback(null, true);
-//         } else {
-//             callback(new Error('Acesso não permitido por CORS'));
-//         }
-//     },
-// }));
 
 // URL de acesso ao FGT de produção: fgt.nct.com.br e chave da API para acesso
 
@@ -43,74 +41,51 @@ localizacao_aps = {
 }
 
 
+const cache = {};
 // Dispositivos conectados
 
 app.get('/associados', (req, res) => {
     axios.get(url2)
         .then(response => {
+            
             const responseData = response.data.results;
-
-            // Filtrando os dados com base no tempo e removendo a condição objeto.length === 3
+            // Objetos recuperados nos últimos 15 minutos
             const objetosVistosNosUltimos15Minutos = responseData.filter(objeto => {
                 const now = Date.now() / 1000;
                 return objeto.triangulation_regions &&
                     objeto.triangulation_regions.every(region => (now - region.last_seen) <= 1800);
             });
 
-            res.json(objetosVistosNosUltimos15Minutos)
-
-            // Formatação para cálculo de trilateração
-            const trilaterationData = objetosVistosNosUltimos15Minutos.map(objeto => {
-                const trilaterationInfo = objeto.triangulation_regions.map(region => {
-                    const { wtp_id, rssi } = region;
-                    const { x, y } = localizacao_aps[wtp_id] || { x: 0, y: 0 };
-                    const distancia = estimate_distance_from_rssi(rssi);
-                    return { x, y, z: 0, r: distancia };
-                });
-
+            // Criação de novo formato, apenas com nome e objeto triangulation_regions
+            const novoFormato = objetosVistosNosUltimos15Minutos.map(objeto => {
                 return {
-                    type: objeto.type,
-                    mac: objeto.user, // Alteração do campo 'mac' para corresponder a 'user'
-                    trilateration_object: trilaterationInfo,
+                    mac: objeto.user,
+                    trilateration_object: objeto.triangulation_regions,
                 };
             });
 
-            // Determinação da coordenada estimada (x, y) através da trilateração
-            const trilaterationResult = trilaterationData.map(objeto => {
-                const { type, mac, trilateration_object } = objeto;
+            // Atualizar o cache com os valores RSSI acumulados para cada wtp_id
+            novoFormato.forEach(objeto => {
+                const mac = objeto.mac;
+                const trilaterationObjects = objeto.trilateration_object;
 
-                if (trilateration_object.length >= 3) {
-                    const ap1 = trilateration_object[0];
-                    const ap2 = trilateration_object[1];
-                    const ap3 = trilateration_object[2];
-
-                    const estimatedPosition = trilateration(ap1, ap2, ap3, true);
-
-                    if (estimatedPosition !== null) {
-                        const resultObj = {
-                            type,
-                            user: mac, // Alteração do campo 'mac' para corresponder a 'user'
-                            position: {
-                                x: estimatedPosition.x,
-                                y: estimatedPosition.y,
-                            },
-                        };
-                        return resultObj;
-                    }
-                } else {
-                    const resultObj = {
-                        type,
-                        user: mac, // Alteração do campo 'mac' para corresponder a 'user'
-                        position: {
-                            x: 0,
-                            y: 0,
-                        },
-                    };
-                    return resultObj;
+                if (!cache[mac]) {
+                    cache[mac] = {};
                 }
+
+                trilaterationObjects.forEach(region => {
+                    const wtpId = region.wtp_id;
+                    const rssiValue = region.rssi;
+
+                    if (!cache[mac][wtpId]) {
+                        cache[mac][wtpId] = [];
+                    }
+
+                    cache[mac][wtpId].push(rssiValue);
+                });
             });
 
-           // res.json(trilaterationResult); // Retorna o resultado final com as coordenadas estimadas
+            res.json(cache);
         })
         .catch(error => {
             res.status(500).json({ error: 'Ocorreu um erro ao processar a requisição de dados.' });
@@ -118,7 +93,74 @@ app.get('/associados', (req, res) => {
 });
 
 
-// Dispositivos não associados
+// Endpoint para manter os três APs com mais amostras de RSSI para cada endereço MAC
+app.get('/manterTop3Aps', (req, res) => {
+    const dadosFiltrados = {};
+
+    for (const mac in cache) {
+        if (cache.hasOwnProperty(mac)) {
+            const aps = Object.entries(cache[mac]); // Converte para array de arrays [wtpId, rssiValues]
+            aps.sort((a, b) => b[1].length - a[1].length); // Ordena os APs pela quantidade de amostras de RSSI
+
+            const top3Aps = aps.slice(0, 3); // Mantém apenas os três primeiros APs com mais amostras de RSSI
+
+            dadosFiltrados[mac] = {};
+            top3Aps.forEach(([wtpId, rssiValues]) => {
+                const mediaFiltrada = filtroKalman(rssiValues);
+                dadosFiltrados[mac][wtpId] = mediaFiltrada;
+            });
+        }
+    }
+
+    // res.json(dadosFiltrados)
+
+    // Retorna objetos após a aplicação do filtro de kalman
+
+    const trilaterationData = Object.keys(dadosFiltrados).map(mac => {
+        const trilaterationInfo = Object.entries(dadosFiltrados[mac]).map(([wtp_id, rssi]) => {
+            const { x, y } = localizacao_aps[wtp_id] || { x: 0, y: 0 };
+            const distancia = estimate_distance_from_rssi(rssi);
+            return { x, y, z: 0, r: distancia };
+        });
+
+        return {
+            mac,
+            trilateration_object: trilaterationInfo,
+        };
+    });
+
+    // res.json(trilaterationData)
+
+    const trilaterationResult = trilaterationData.map(objeto => {
+        const { mac, trilateration_object } = objeto;
+        if (trilateration_object.length >= 3) {
+            const ap1 = trilateration_object[0];
+            const ap2 = trilateration_object[1];
+            const ap3 = trilateration_object[2];
+            const estimatedPosition = trilateration(ap1, ap2, ap3, true);
+
+            if (estimatedPosition != null) {
+                return {
+                    mac,
+                    position: {
+                        x: estimatedPosition.x,
+                        y: estimatedPosition.y,
+                    },
+                };
+            }
+        }
+             else  return {
+                    mac,
+                    position: {
+                        x: 0,
+                        y: 0,
+                    },
+        };
+    });
+    
+    res.json(trilaterationResult)
+   
+});
 
 
 app.get('/dados', (req, res) => {
@@ -135,7 +177,7 @@ app.get('/dados', (req, res) => {
                 return objeto.triangulation_regions.some(region => (now - region.last_seen) <= 1800); 
             });
 
-            // res.json(objetosVistosNosUltimos15Minutos);
+            //res.json(objetosVistosNosUltimos15Minutos);
 
             // Condição removida (objeto.length === 3) - Atualmente os APs da empresa 
 
@@ -158,7 +200,7 @@ app.get('/dados', (req, res) => {
             });
 
             // Determinação da coordenada estimada (x,y) através da trilateração
-            res.json(trilaterationData);
+            //res.json(trilaterationData);
 
 
             const trilaterationResult = trilaterationData.map(objeto => {
@@ -241,31 +283,17 @@ function estimate_distance_from_rssi(rssi) {
     return distancia;
 }
 
-// Trilateração
+function filtroKalman(valoresRSSI) {
+    let mediaFiltrada = 0;
+    let erroEstimado = 1;
 
-// function trilaterate(ap1, ap2, ap3) {
-//     const x1 = ap1.x;
-//     const y1 = ap1.y;
-//     const d1 = ap1.distancia;
+    for (const valor of valoresRSSI) {
+        const ganhoKalman = erroEstimado / (erroEstimado + 1);
+        mediaFiltrada = mediaFiltrada + ganhoKalman * (valor - mediaFiltrada);
+        erroEstimado = (1 - ganhoKalman) * erroEstimado;
+    }
 
-//     const x2 = ap2.x;
-//     const y2 = ap2.y;
-//     const d2 = ap2.distancia;
+    return mediaFiltrada;
+}
 
-//     const x3 = ap3.x;
-//     const y3 = ap3.y;
-//     const d3 = ap3.distancia;
 
-//     const A = 2 * (x2 - x1);
-//     const B = 2 * (y2 - y1);
-//     const C = 2 * (x3 - x1);
-//     const D = 2 * (y3 - y1);
-
-//     const E = (d1 * d1 - d2 * d2 - x1 * x1 + x2 * x2 - y1 * y1 + y2 * y2);
-//     const F = (d2 * d2 - d3 * d3 - x2 * x2 + x3 * x3 - y2 * y2 + y3 * y3);
-
-//     const x = ((E * D - B * F) / (A * D - B * C));
-//     const y = ((E * C - A * F) / (B * C - A * D));
-
-//     return { x, y };
-// }

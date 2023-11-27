@@ -68,38 +68,68 @@ function convertCoordinates(coordinates) {
 }
 
 
-//  Função que recupera dados da API para plotá-los
+//  Função que recupera dados da API para plotá-los - Unassociated devices
+// async function fetchDataAndPlotMarkers() {
+//     try {
+//         const response = await fetch('http://localhost:3000/dados');
+//         const markerData = await response.json();
+//         console.log("ALOOOOOOOOOOOOOOOO", markerData);
+
+//         if (Array.isArray(markerData)) {
+//             markerData.forEach(item => {
+//                 if (item && item.type === "BLE device") {
+//                     if (item.position) {
+//                         const { x, y } = item.position;
+//                         const convertedCoordinates = convertCoordinates({ x, y });
+//                         const marker = L.marker([convertedCoordinates.y, convertedCoordinates.x], { icon: ball }).addTo(map);
+//                         if (item.mac) {
+//                             marker.bindPopup(`Endereço MAC: ${item.mac}`);
+//                         } else {
+//                             marker.bindPopup(`Endereço MAC não encontrado`);
+//                         }
+//                     } else if (item.trilateration_object) {
+//                         const { x, y, rssi } = item.trilateration_object[0];
+//                         if (x && y && rssi) {
+//                             const convertedCoordinates = convertCoordinates({ x, y });
+//                             const circle = L.circle([convertedCoordinates.y, convertedCoordinates.x], {
+//                                 radius: calculateRadiusFromRSSI(rssi),
+//                                 color: 'red',
+//                                 fillColor: '#f03',
+//                                 fillOpacity: 0.3
+//                             }).addTo(map);
+//                             circle.bindPopup(`Endereço MAC: ${item.mac}`);
+//                         }
+//                     }
+//                 }
+//             });
+//         }
+//     } catch (error) {
+//         console.error('Erro ao buscar dados do backend:', error);
+//     }
+// }
+
+
+
+// Função equivalente para plotar dispositivos associados via wifi
+
 async function fetchDataAndPlotMarkers() {
     try {
-        const response = await fetch('http://localhost:3000/dados');
+        const response = await fetch('http://localhost:3000/manterTop3Aps');
         const markerData = await response.json();
         console.log("ALOOOOOOOOOOOOOOOO", markerData);
 
         if (Array.isArray(markerData)) {
             markerData.forEach(item => {
-                if (item.type === "BLE device") {
-                    if (item.position) {
-                        // O objeto já contém as coordenadas estimadas
-                        const { x, y } = item.position;
-                        const convertedCoordinates = convertCoordinates({ x, y });
-                        const marker = L.marker([convertedCoordinates.y, convertedCoordinates.x], { icon: ball }).addTo(map);
-                        if (item.mac) {
-                            marker.bindPopup(`Endereço MAC: ${item.mac}`);
-                        } else {
-                            marker.bindPopup(`Endereço MAC não encontrado`);
-                        }
-                    } else if (item.trilateration_object){
-                        const { x, y, rssi } = item.trilateration_object[0];
-                        const convertedCoordinates = convertCoordinates({ x, y });
-                        const circle = L.circle([convertedCoordinates.y, convertedCoordinates.x], {
-                            radius: calculateRadiusFromRSSI(rssi),
-                            color: 'red',
-                            fillColor: '#f03',
-                            fillOpacity: 0.3
-                        }).addTo(map);
-                        circle.bindPopup(`Endereço MAC: ${item.mac}`);
+                if (item && item.position) {
+                    const { x, y } = item.position;
+                    const convertedCoordinates = convertCoordinates({ x, y });
+                    const marker = L.marker([convertedCoordinates.y, convertedCoordinates.x], { icon: ball }).addTo(map);
+                    if (item.mac) {
+                        marker.bindPopup(`Usuário: ${item.mac}`);
+                    } else {
+                        marker.bindPopup(`Usuário não encontrado`);
                     }
-                } 
+                }
             });
         }
     } catch (error) {
@@ -158,9 +188,22 @@ function plotMarkersOnMap(data) {
     }
 }
 
-
 plotMarkersOnMap(posicao_aps_metros);
 fetchDataAndPlotMarkers();
+
+
+
+// const armando = L.marker([88.8300432, 1117.54285578]).addTo(map);
+// const recepcao = L.marker([(12* 29.6100144), (23.5* 35.1428571)]).addTo(map);
+// const RH = L.marker([(18* 29.6100144), (28* 35.1428571)]).addTo(map);
+// const rafa = L.marker([(12* 29.6100144), (6.2* 35.1428571)]).addTo(map);
+// const comercial = L.marker([(17* 29.6100144), (19* 35.1428571)]).addTo(map);
+const gerencia = L.marker([(17.5* 29.6100144), (2.8* 35.1428571)]).addTo(map);
+// const eu = L.marker([(7.2* 29.6100144), (3* 35.1428571)]).addTo(map);
+// const treinamento = L.marker([(88.8300432), (6.2* 35.1428571)]).addTo(map);
+
+
+// FERRAMENTA TESTE: 00:0b:82:ea:c9:cd
 
 // Função para centralizar o mapa na posição inicial
 function centerMapToInitialPosition() {

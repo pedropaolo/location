@@ -1,6 +1,7 @@
 <!--  MAC ADDRESS: location and navigation 60:2e:56:96:61 -->
 <!-- find me : 5a:1b:b8:51:8b:d1 -->
 <!-- Teste 3 49:ba:63:05:47:c7 -->
+<!-- FGT produção (CPD): e0:23:ff:e3:1d:c7 -->
 
 
 
@@ -10,12 +11,12 @@
 
 <!-- 
 SALA ARMANDO:  ( 'x': 31.8, 'y': 3)
-MINHA BANCADA ('x': 3, 'y': 6.2)
-MESA RAFA : ('x': 6.2 , 'y': 12)
+MINHA BANCADA ('x': 3, 'y': 6.2) OK
+MESA RAFA : ('x': 6.2 , 'y': 12) OK
 MESA DO YURIBOY: ('x': 19, 'y': 15)
 GERENCIA: { 'x': 2.8, 'y': 15.5 },
-RECEPÇÂO: { 'x': 25, 'y': 12 },
-COPA:  { 'x': 13, 'y': 6.2 }
+RECEPÇÂO: { 'x': 25, 'y': 12 }, OK
+RH: {Faltando loc} OK
 -->
 
 ## COORDENADSA 01 - Minha bancada ()
@@ -950,3 +951,72 @@ type	"BLE device"
 
 <!-- DIA 2 -->
 
+
+type	"BLE device"
+  mac	"5a:4c:62:d1:a5:ae"
+  trilateration_object	
+
+    x	7.5
+    y	2
+    rssi	33
+    distancia	10.092371919067762
+
+
+type	"BLE device"
+  mac	"5a:4c:62:d1:a5:ae"
+  trilateration_object	
+    
+    x	7.5
+    y	2
+    rssi	36
+    distancia	9.688672037283036
+
+
+type	"BLE device"
+  mac	"6d:2f:20:10:38:35"
+  trilateration_object	
+
+    x	7.5
+    y	2
+    rssi	34
+    distancia	9.956138335018636
+
+
+
+type	"BLE device"
+  mac	"6d:2f:20:10:38:35"
+  trilateration_object	
+    
+    x	7.5
+    y	2
+    rssi	33
+    distancia	10.092371919067762
+
+
+mac	"6d:2f:20:10:38:35"
+  trilateration_object	
+    
+    x	7.5
+    y	2
+    rssi	35
+    distancia	9.821664198572202
+
+
+type	"BLE device"
+  mac	"64:3b:fd:7c:ef:d5"
+    trilateration_object	
+      
+    x	7.5
+    y	2
+    rssi	32
+    distancia	10.230647483382237
+
+
+type	"BLE device"
+  mac	"64:3b:fd:7c:ef:d5"
+    trilateration_object	
+      
+    x	7.5
+    y	2
+    rssi	35
+    distancia	9.821664198572202
