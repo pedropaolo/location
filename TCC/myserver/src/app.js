@@ -47,7 +47,7 @@ const cache = {};
 app.get('/associados', (req, res) => {
     axios.get(url2)
         .then(response => {
-            
+
             const responseData = response.data.results;
             // Objetos recuperados nos últimos 15 minutos
             const objetosVistosNosUltimos15Minutos = responseData.filter(objeto => {
@@ -133,6 +133,8 @@ app.get('/manterTop3Aps', (req, res) => {
 
     const trilaterationResult = trilaterationData.map(objeto => {
         const { mac, trilateration_object } = objeto;
+        let methodUsed = 'trilateration'; // Inicializa o método como trilateração por padrão
+
         if (trilateration_object.length >= 3) {
             const ap1 = trilateration_object[0];
             const ap2 = trilateration_object[1];
@@ -146,20 +148,38 @@ app.get('/manterTop3Aps', (req, res) => {
                         x: estimatedPosition.x,
                         y: estimatedPosition.y,
                     },
+                    method: methodUsed, // Adiciona o campo indicando o método utilizado
+                };
+            }
+
+            methodUsed = 'bilateration'; // Se a trilateração falhar, troca o método para bilateração
+            const estimatedPositionBilateration = bilateration(ap1, ap2);
+
+            if (estimatedPositionBilateration != null) {
+                return {
+                    mac,
+                    position: {
+                        x: estimatedPositionBilateration.x,
+                        y: estimatedPositionBilateration.y,
+                    },
+                    method: methodUsed, // Adiciona o campo indicando o método utilizado
                 };
             }
         }
-             else  return {
-                    mac,
-                    position: {
-                        x: 0,
-                        y: 0,
-                    },
+
+        // Se não houver pontos suficientes para a trilateração ou bilateração, retorna posição (0,0) com o método utilizado
+        return {
+            mac,
+            position: {
+                x: 0,
+                y: 0,
+            },
+            method: 'none', // Adiciona o campo indicando o método utilizado
         };
     });
-    
+
     res.json(trilaterationResult)
-   
+
 });
 
 
@@ -174,7 +194,7 @@ app.get('/dados', (req, res) => {
 
             const now = Date.now() / 1000; // Convertendo o tempo atual para segundos
             const objetosVistosNosUltimos15Minutos = objetosFiltrados.filter(objeto => {
-                return objeto.triangulation_regions.some(region => (now - region.last_seen) <= 1800); 
+                return objeto.triangulation_regions.some(region => (now - region.last_seen) <= 1800);
             });
 
             //res.json(objetosVistosNosUltimos15Minutos);
@@ -189,7 +209,7 @@ app.get('/dados', (req, res) => {
                     const { wtp_id, rssi } = region;
                     const { x, y } = localizacao_aps[wtp_id] || { x: 0, y: 0 };
                     const distancia = estimate_distance_from_rssi(rssi);
-                    return { x, y, z:0, r: distancia };
+                    return { x, y, z: 0, r: distancia };
                 });
 
                 return {
@@ -217,7 +237,7 @@ app.get('/dados', (req, res) => {
                     const estimatedPosition = trilateration(ap1, ap2, ap3, true);
                     //console.log(estimatedPosition)
 
-                    if(estimatedPosition != null){
+                    if (estimatedPosition != null) {
                         const resultObj = {
                             type,
                             mac,
@@ -230,7 +250,7 @@ app.get('/dados', (req, res) => {
                         return resultObj;
                     }
 
-                    
+
                 } else {
                     const resultObj = {
                         type,
@@ -244,7 +264,7 @@ app.get('/dados', (req, res) => {
                     return resultObj;
                 }
             });
-           
+
 
             // Agora, você tem uma matriz de objetos contendo as coordenadas estimadas (x, y) e os endereços MAC
             res.json(trilaterationResult);
@@ -296,4 +316,31 @@ function filtroKalman(valoresRSSI) {
     return mediaFiltrada;
 }
 
-
+// Esta função recebe dois objetos âncora, cada um com as propriedades x, y e d, que representam as coordenadas e a distância ao nó alvo, respectivamente.
+// A função retorna um objeto com as propriedades x e y, que representam as coordenadas estimadas do nó alvo.
+function bilateration(anchor1, anchor2) {
+    // Primeiro, calculamos o ângulo entre os dois âncoras usando a função Math.atan2
+    let angle = Math.atan2(anchor2.y - anchor1.y, anchor2.x - anchor1.x);
+    // Em seguida, rotacionamos os âncoras para que fiquem alinhados com o eixo x, usando a função Math.cos e Math.sin
+    let rotatedAnchor1 = {
+        x: anchor1.x * Math.cos(angle) + anchor1.y * Math.sin(angle),
+        y: -anchor1.x * Math.sin(angle) + anchor1.y * Math.cos(angle),
+        d: anchor1.r
+    };
+    let rotatedAnchor2 = {
+        x: anchor2.x * Math.cos(angle) + anchor2.y * Math.sin(angle),
+        y: -anchor2.x * Math.sin(angle) + anchor2.y * Math.cos(angle),
+        d: anchor2.r
+    };
+    // Agora, podemos aplicar a fórmula da bilateração para obter a coordenada x do nó alvo no sistema rotacionado
+    let rotatedTargetX = (rotatedAnchor1.d ** 2 - rotatedAnchor2.d ** 2 + rotatedAnchor2.x ** 2) / (2 * rotatedAnchor2.x);
+    // Para obter a coordenada y do nó alvo no sistema rotacionado, usamos a equação do círculo centrado no primeiro âncora
+    let rotatedTargetY = Math.sqrt(rotatedAnchor1.d ** 2 - rotatedTargetX ** 2);
+    // Finalmente, rotacionamos de volta o nó alvo para obter as coordenadas originais, usando a função Math.cos e Math.sin
+    let target = {
+        x: rotatedTargetX * Math.cos(-angle) + rotatedTargetY * Math.sin(-angle),
+        y: -rotatedTargetX * Math.sin(-angle) + rotatedTargetY * Math.cos(-angle)
+    };
+    // Retornamos o objeto target
+    return target;
+}

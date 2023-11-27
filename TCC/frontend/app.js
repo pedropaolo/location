@@ -62,6 +62,12 @@ const ball = new L.Icon({
     iconAnchor: [21, 42],
 });
 
+const ball2 = new L.Icon({
+    iconUrl: '../images/ball2.png',
+    iconSize: [12, 12],
+    iconAnchor: [21, 42],
+});
+
 function convertCoordinates(coordinates) {
     const convertedCoordinates = { x: coordinates.x * 35.1428571, y: coordinates.y * 29.6100144 };
     return convertedCoordinates;
@@ -123,11 +129,14 @@ async function fetchDataAndPlotMarkers() {
                 if (item && item.position) {
                     const { x, y } = item.position;
                     const convertedCoordinates = convertCoordinates({ x, y });
-                    const marker = L.marker([convertedCoordinates.y, convertedCoordinates.x], { icon: ball }).addTo(map);
-                    if (item.mac) {
+
+                    // Verificar o método de posicionamento
+                    if (item.method === "trilateration") {
+                        const marker = L.marker([convertedCoordinates.y, convertedCoordinates.x], { icon: ball }).addTo(map);
                         marker.bindPopup(`Usuário: ${item.mac}`);
                     } else {
-                        marker.bindPopup(`Usuário não encontrado`);
+                        const marker = L.marker([convertedCoordinates.y, convertedCoordinates.x], { icon: ball2 }).addTo(map);
+                        marker.bindPopup(`Usuário: ${item.mac}`);
                     }
                 }
             });
@@ -198,7 +207,7 @@ fetchDataAndPlotMarkers();
 // const RH = L.marker([(18* 29.6100144), (28* 35.1428571)]).addTo(map);
 // const rafa = L.marker([(12* 29.6100144), (6.2* 35.1428571)]).addTo(map);
 // const comercial = L.marker([(17* 29.6100144), (19* 35.1428571)]).addTo(map);
-const gerencia = L.marker([(17.5* 29.6100144), (2.8* 35.1428571)]).addTo(map);
+// const gerencia = L.marker([(17.5* 29.6100144), (2.8* 35.1428571)]).addTo(map);
 // const eu = L.marker([(7.2* 29.6100144), (3* 35.1428571)]).addTo(map);
 // const treinamento = L.marker([(88.8300432), (6.2* 35.1428571)]).addTo(map);
 
@@ -218,18 +227,7 @@ btnCenterMap.addEventListener("click", centerMapToInitialPosition);
 function highlightMarkerByMAC(mac) {
     let found = false;
     map.eachLayer((layer) => {
-        if (layer instanceof L.Marker) {
-            const popup = layer.getPopup();
-            if (popup && popup.getContent().includes(mac)) {
-                // O marcador contém o endereço MAC pesquisado no conteúdo do popup
-                layer.openPopup();
-                map.setView(layer.getLatLng(), 1);
-                found = true; 
-            }
-        }
-
-        else if (layer instanceof L.Circle) {
-            // Verifica se é um círculo
+        if (layer instanceof L.Marker || layer instanceof L.Circle) {
             const popup = layer.getPopup();
             if (popup && popup.getContent().includes(mac)) {
                 layer.openPopup();
@@ -240,7 +238,6 @@ function highlightMarkerByMAC(mac) {
     });
 
     if (!found) {
-        // Mostrar uma mensagem de erro se o endereço MAC não for encontrado
         alert(`Endereço MAC '${mac}' não encontrado.`);
     }
 }
